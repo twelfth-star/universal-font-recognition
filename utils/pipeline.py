@@ -1,9 +1,21 @@
-import image_generation
-import train_model
+import random
 import gc
+
+import numpy as np
 import torch
 
+import image_generation
+import train_model
+
+def init_seed():
+    random.seed(42)
+    np.random.seed(42)
+    torch.random.seed(42)
+
+
 def main():
+    init_seed()
+    
     num_images = 12800
     num_samples_per_image = 3
     imgs, labels = image_generation.generate_images(num_images)

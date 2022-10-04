@@ -1,4 +1,4 @@
-from tkinter import Image
+from PIL import Image
 import torch
 from torch import nn
 from tqdm import tqdm
@@ -90,11 +90,13 @@ def train_model(net, train_iter, num_epochs, lr, device, num_batch = None):
     print(f'loss {train_l:.3f}, train acc {train_acc:.3f}')
 
 def try_gpu(i=0):
+    # Return the best device available
     if torch.cuda.device_count() >= i + 1:
         return torch.device(f'cuda:{i}')
     return torch.device('cpu')
 
-def predict(net, pil_image: Image, num_sample=5, side_length=105):
+def predict(net, pil_image: Image, num_sample=5, side_length=105, device=None):
+    pil_image = pil_image.convert("L")
     h, w = pil_image.height, pil_image.width
     if h > w:
         pil_image = pil_image.resize((105, int(h / (w / side_length))))
@@ -102,24 +104,23 @@ def predict(net, pil_image: Image, num_sample=5, side_length=105):
         pil_image = pil_image.resize((int(w / (h / side_length)), side_length))
     samples = image_generation.image_sampling(pil_image, num_sample, side_length, side_length)
 
-    pred_ls = []
+    if device == None:
+        device = try_gpu()
 
-    for i in samples:
-        i = torch.tensor(np.array(i)).float()
-        pred = net(i)
-        pred_ls.append(torch.argmax(pred))
-    final_pred = np.argmax(np.bincount(pred_ls))
+    samples = image_generation.images_to_tensor(samples)
+    samples = samples.to(device)
+    pred = net(samples)
+    pred = pred.argmax(axis=1)
+    final_pred = torch.argmax(torch.bincount(pred)).cpu().item()
 
     return final_pred
 
-if __name__ == "__main__":
-    print("Initiating parameters...")
-    net = get_model(3)
-    device = try_gpu()
-    batch_size = 128
-    num_epochs = 50
-    lr = 0.01
-    print(f"device: {device}, batch size: {batch_size}, num of epochs: {num_epochs}, lr: {lr}")
-    train_iter = image_generation.get_train_dataloader(1280, 64)
+def predict_imgs(net, pil_imgs, labels: list[int]):
+    assert(len(pil_imgs) == len(labels))
+    accurate = 0
+    for i in tqdm(range(len(pil_imgs))):
+        res = predict(net, pil_imgs[i])
+        if res == labels[i]:
+            accurate += 1
+    return accurate / len(pil_imgs)
 
-    train_model(net, train_iter, num_epochs, lr, device)

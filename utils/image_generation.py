@@ -1,11 +1,11 @@
+import os
+import random
+
 import torch
+from torch.utils.data import DataLoader, TensorDataset
 from PIL import Image
 import numpy as np
-import random
 from tqdm import tqdm
-import os
-
-from torch.utils.data import DataLoader, TensorDataset
 from trdg.generators import GeneratorFromDict
 
 def squeeze_img(pil_img, orientation=1, ratio=(5/6, 7/6)):
@@ -37,10 +37,10 @@ def generate_images(count, gen_batch_size = 10):
     print(f"Generation batch size: {gen_batch_size}")
     orientation = 1 #vertical
     skewing_angle = 5
-    blur = 0
+    blur = 3
     language = 'ja'
     gen_batch_size = gen_batch_size
-    size = 105 #height if horizontal, width if vertical
+    size = 105 # height if horizontal, width if vertical
     space_width = 0
     for i in tqdm(range(int(count / gen_batch_size)+1)):
         background_type = random.randint(0, 2)
