@@ -1,7 +1,9 @@
+from tkinter import Image
 import torch
 from torch import nn
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 
 import image_generation
 
@@ -91,6 +93,24 @@ def try_gpu(i=0):
     if torch.cuda.device_count() >= i + 1:
         return torch.device(f'cuda:{i}')
     return torch.device('cpu')
+
+def predict(net, pil_image: Image, num_sample=5, side_length=105):
+    h, w = pil_image.height, pil_image.width
+    if h > w:
+        pil_image = pil_image.resize((105, int(h / (w / side_length))))
+    else:
+        pil_image = pil_image.resize((int(w / (h / side_length)), side_length))
+    samples = image_generation.image_sampling(pil_image, num_sample, side_length, side_length)
+
+    pred_ls = []
+
+    for i in samples:
+        i = torch.tensor(np.array(i)).float()
+        pred = net(i)
+        pred_ls.append(torch.argmax(pred))
+    final_pred = np.argmax(np.bincount(pred_ls))
+
+    return final_pred
 
 if __name__ == "__main__":
     print("Initiating parameters...")
