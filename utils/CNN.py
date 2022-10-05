@@ -21,6 +21,11 @@ class CNN(nn.Module):
             nn.BatchNorm2d(128),            # output shape: 128 * 24 * 24
             nn.MaxPool2d(kernel_size=2)     # output shape: 128 * 12 * 12
         )
+
+        for p in self.Cu.parameters():
+            # parameters of Cu is fixed
+            p.requires_grad=False
+
         self.Cs = nn.Sequential(
             nn.Conv2d(128, 256, kernel_size=12), nn.ReLU(), # output shape: 256 * 12 * 12
             nn.Conv2d(256, 256, kernel_size=12), nn.ReLU(), # output shape: 256 * 12 * 12
