@@ -10,6 +10,8 @@ import train_model
 import image_generation
 from image_generation import SYN_IMAGE_PATH
 
+CNN_MODEL_PATH = r"../data/models/cnn_model.torch"
+
 class CNN(nn.Module):
     def __init__(self, encoder: SCAE.Encoder, num_types: int):
         super().__init__()
@@ -62,9 +64,12 @@ def train_CNN(net: CNN, train_iter, num_epochs=20):
         lr_decay=True
     )
 
-def get_CNN_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH):
-    imgs, labels = image_generation.load_images(count=count, img_dir=syn_path)
-    imgs, labels = image_generation.images_sampling(imgs, labels)
+def get_CNN_model():
+    return torch.load(CNN_MODEL_PATH)
+
+def get_CNN_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH, num_samples_per_image=3):
+    imgs, labels = image_generation.load_images(count=count, img_path=syn_path)
+    imgs, labels = image_generation.images_sampling(imgs, labels, sample_num=num_samples_per_image)
 
     data_loader = image_generation.get_train_dataloader(imgs, labels, batch_size)
 

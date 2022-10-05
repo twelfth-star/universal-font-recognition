@@ -10,6 +10,7 @@ from trdg.generators import GeneratorFromDict
 
 SYN_IMAGE_PATH = r'../data/synthetic_images/'
 REAL_IMAGE_PATH = r'../data/real_images/'
+FONTS_PATH = r'../data/fonts'
 
 def squeeze_img(pil_img, orientation=1, ratio=(5/6, 7/6)):
     if type(ratio) == tuple:
@@ -24,18 +25,17 @@ def squeeze_img(pil_img, orientation=1, ratio=(5/6, 7/6)):
         print("ERROR: invalid squeezing dimension!")
     return pil_img
 
-def get_fonts_list(fonts_dir):
+def get_fonts_list(fonts_path=FONTS_PATH):
     fonts = []
-    for i in os.listdir(fonts_dir):
+    for i in os.listdir(fonts_path):
         if str(i).endswith('.ttf'):
             fonts.append(i)
-    return [os.path.join(fonts_dir, i) for i in fonts]
+    return [os.path.join(fonts_path, i) for i in fonts]
 
 def generate_images(count, gen_batch_size = 10):
     print("Generating images...")
     imgs, labels = [], []
-    fonts_dir = '../data/fonts'
-    fonts = get_fonts_list(fonts_dir)
+    fonts = get_fonts_list()
     print(f"Fonts list: {fonts}")
     print(f"Generation batch size: {gen_batch_size}")
     orientation = 1 #vertical
@@ -87,31 +87,31 @@ def generate_images(count, gen_batch_size = 10):
 
     return imgs, labels
 
-def save_images(imgs, labels, output_dir=SYN_IMAGE_PATH):
+def save_images(imgs, labels, output_path=SYN_IMAGE_PATH):
     print("Saving generated images...")
-    print("output direction: " + output_dir)
+    print("output direction: " + output_path)
     counts = [0] * (max(labels) + 1)
     for i in tqdm(range(len(imgs))):
         img = imgs[i]
-        path = output_dir + str(labels[i]) + "_" + str(counts[labels[i]]) + '.jpg'
+        path = output_path + str(labels[i]) + "_" + str(counts[labels[i]]) + '.jpg'
         img.save(path)
         counts[labels[i]] += 1
     print(f"{len(imgs)} images saved.")
 
-def load_images(count=np.Inf, img_dir=SYN_IMAGE_PATH, need_label=True):
+def load_images(count=np.Inf, img_path=SYN_IMAGE_PATH, need_label=True):
     print("Loading images...")
-    print("Loading from: " + img_dir)
+    print("Loading from: " + img_path)
 
     imgs, labels = [], []
 
-    img_list = os.listdir(img_dir)
+    img_list = os.listdir(img_path)
     np.random.shuffle(img_list)
 
     for i in tqdm(range(min(len(img_list), count))):
         if i >= count:
             break
         img_name = img_list[i]
-        path = os.path.join(img_dir, img_name)
+        path = os.path.join(img_path, img_name)
         img = Image.open(path)
         imgs.append(img.copy().convert("L"))
         img.close()
@@ -155,6 +155,7 @@ def images_sampling(pil_imgs, labels, sample_num=3, width=105, height=105):
 
 def img_to_tensor(pil_imgs):
     imgs = torch.tensor(np.array([np.array(img) for img in pil_imgs])).float() # Convert img to tensor
+    imgs = imgs / 255
     imgs = torch.unsqueeze(imgs, dim=1) # channel=1
 
     return imgs
@@ -182,12 +183,10 @@ def get_train_dataloader(pil_imgs, labels, batch_size):
     else:
         # Image itself as label (SCAE)
         labels = imgs
-        labels = labels / 255
 
     print(f"images shape: {imgs.shape}")
     print(f"label shape: {labels.shape}")
 
-    imgs = imgs / 255
     
     print("Creating dataloader...")
     print(f"Batch size: {batch_size}")

@@ -11,6 +11,8 @@ from image_generation import SYN_IMAGE_PATH, REAL_IMAGE_PATH
 import train_model
 from train_model import init_weights
 
+SCAE_MODEL_PATH = r"../data/models/scae_model.torch"
+
 class Encoder(nn.Module):
     def __init__(self):
         super().__init__()
@@ -57,12 +59,12 @@ class SCAE(nn.Module):
 
         return X
 
-def get_SCAE_train_iter(count=np.Inf, batch_size=128, syn_dir=SYN_IMAGE_PATH, real_dir=REAL_IMAGE_PATH):
-    syn_imgs = image_generation.load_images(img_dir=syn_dir, need_label=False, count=count)
-    real_imgs = image_generation.load_images(img_dir=real_dir, need_label=False, count=count)
+def get_SCAE_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH, real_path=REAL_IMAGE_PATH, num_samples_per_image=3):
+    syn_imgs = image_generation.load_images(img_path=syn_path, need_label=False, count=count)
+    real_imgs = image_generation.load_images(img_path=real_path, need_label=False, count=count)
 
     imgs = syn_imgs + real_imgs
-    imgs = image_generation.images_sampling(imgs, None)
+    imgs = image_generation.images_sampling(imgs, None, sample_num=num_samples_per_image)
 
     for i in range(len(imgs)):
         imgs[i] = imgs[i]
@@ -84,5 +86,8 @@ def train_SCAE(net: SCAE, train_iter, num_epochs=20):
         task_name="SCAE"
     )
 
+
+def get_SCAE_model():
+    return torch.load(SCAE_MODEL_PATH)
 
 

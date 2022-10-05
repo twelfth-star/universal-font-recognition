@@ -88,8 +88,9 @@ def predict(net, pil_image: Image, num_sample=5, side_length=105, device=None):
     if device == None:
         device = try_gpu()
 
-    samples = image_generation.images_to_tensor(samples)
+    samples = image_generation.img_to_tensor(samples)
     samples = samples.to(device)
+    net = net.to(device)
     pred = net(samples)
     pred = pred.argmax(axis=1)
     final_pred = torch.argmax(torch.bincount(pred)).cpu().item()
