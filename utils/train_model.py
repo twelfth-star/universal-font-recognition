@@ -97,7 +97,7 @@ def predict(net, pil_image: Image, num_sample=5, side_length=105, device=None):
 
     return final_pred
 
-def predict_imgs(net, pil_imgs, labels: list[int]):
+def predict_imgs(net, pil_imgs, labels):
     assert(len(pil_imgs) == len(labels))
     accurate = 0
     for i in tqdm(range(len(pil_imgs))):
