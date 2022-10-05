@@ -14,7 +14,6 @@ def init_weights(m):
 
 def accuracy(y_hat, y):
     y_hat = y_hat.argmax(axis=1)
-    y = y.argmax(axis=1)
     cmp = y_hat.type(y.dtype) == y
     return float(cmp.type(y.dtype).sum())
 
@@ -43,7 +42,7 @@ def train(net: nn.Module, train_iter, num_epochs, lr, loss, weight_decay, moment
             X, y = X.to(device), y.to(device)
             y_hat = net(X)
             l = loss(y_hat, y)
-            if i % 300 == 0:
+            if i % int(num_batch / 10) == 0:
                 print(f"epoch: {epoch}, iter: {i}, loss: {l.item()}")
             if torch.any(torch.isnan(y_hat)) or torch.any(torch.isnan(l)):
                 print(f"ERROR: nan! epoch: {epoch}, iter: {i}, loss: {l.item()}")

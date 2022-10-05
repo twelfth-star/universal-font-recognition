@@ -8,6 +8,9 @@ import numpy as np
 from tqdm import tqdm
 from trdg.generators import GeneratorFromDict
 
+SYN_IMAGE_PATH = r'../data/synthetic_images/'
+REAL_IMAGE_PATH = r'../data/real_images/'
+
 def squeeze_img(pil_img, orientation=1, ratio=(5/6, 7/6)):
     if type(ratio) == tuple:
         ratio = random.uniform(ratio[0], ratio[1])
@@ -84,7 +87,7 @@ def generate_images(count, gen_batch_size = 10):
 
     return imgs, labels
 
-def save_images(imgs, labels, output_dir='../data/synthetic_images/'):
+def save_images(imgs, labels, output_dir=SYN_IMAGE_PATH):
     print("Saving generated images...")
     print("output direction: " + output_dir)
     counts = [0] * (max(labels) + 1)
@@ -95,7 +98,7 @@ def save_images(imgs, labels, output_dir='../data/synthetic_images/'):
         counts[labels[i]] += 1
     print(f"{len(imgs)} images saved.")
 
-def load_images(count=np.Inf, img_dir='../data/synthetic_images/', need_label=True):
+def load_images(count=np.Inf, img_dir=SYN_IMAGE_PATH, need_label=True):
     print("Loading images...")
     print("Loading from: " + img_dir)
 
@@ -150,27 +153,49 @@ def images_sampling(pil_imgs, labels, sample_num=3, width=105, height=105):
     else:
         return sample_imgs
 
+def img_to_tensor(pil_imgs):
+    imgs = torch.tensor(np.array([np.array(img) for img in pil_imgs])).float() # Convert img to tensor
+    imgs = torch.unsqueeze(imgs, dim=1) # channel=1
+
+    return imgs
+
+def tensor_to_img(tensor):
+    dim = len(tensor.shape)
+    if dim == 4:
+        imgs = []
+        for i in range(tensor.shape[0]):
+            imgs.append(tensor_to_img(tensor[i]))
+        return imgs
+    elif dim == 3:
+        return Image.fromarray(np.array(tensor[0].cpu()))
+    else:
+        print(f"ERROR: invalid tensor dimension: {dim}")
+
 
 def get_train_dataloader(pil_imgs, labels, batch_size):
     print("Converting images and labels to tensor...")
-    imgs = torch.tensor(np.array([np.array(img) for img in pil_imgs])).float() # Convert img to tensor
-    imgs = torch.unsqueeze(imgs, dim=1) # channel=1
+    imgs = img_to_tensor(pil_imgs)
+    
     if labels != None:
-        labels = torch.nn.functional.one_hot(torch.tensor(labels)).float()
+        # Type of fond as label (CNN)
+        labels = torch.tensor(labels).long() # no need to convert to one-hot because nn.CrossEntropyLoss() will do it
     else:
+        # Image itself as label (SCAE)
         labels = imgs
+        labels = labels / 255
 
     print(f"images shape: {imgs.shape}")
     print(f"label shape: {labels.shape}")
 
     imgs = imgs / 255
-    labels = labels / 255
-
+    
     print("Creating dataloader...")
     print(f"Batch size: {batch_size}")
 
     dataset = TensorDataset(imgs, labels)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    print(f"DataLoader size: {len(data_loader)}")
 
     return data_loader
 

@@ -8,10 +8,11 @@ import numpy as np
 import SCAE
 import train_model
 import image_generation
+from image_generation import SYN_IMAGE_PATH
 
 class CNN(nn.Module):
-    def __init__(self, encoder: SCAE.Encoder):
-        super.__init__()
+    def __init__(self, encoder: SCAE.Encoder, num_types: int):
+        super().__init__()
         self.Cu = nn.Sequential(
             encoder.conv1, nn.ReLU(),       # output shape: 64 * 48 * 48
             nn.BatchNorm2d(64),             # output shape: 64 * 48 * 48
@@ -27,9 +28,9 @@ class CNN(nn.Module):
             p.requires_grad=False
 
         self.Cs = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=12), nn.ReLU(), # output shape: 256 * 12 * 12
-            nn.Conv2d(256, 256, kernel_size=12), nn.ReLU(), # output shape: 256 * 12 * 12
-            nn.Conv2d(256, 256, kernel_size=12), nn.ReLU(), # output shape: 256 * 12 * 12
+            nn.Conv2d(128, 256, kernel_size=3, padding=1), nn.ReLU(), # output shape: 256 * 12 * 12
+            nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU(), # output shape: 256 * 12 * 12
+            nn.Conv2d(256, 256, kernel_size=3, padding=1), nn.ReLU(), # output shape: 256 * 12 * 12
 
             nn.Flatten(),   # output shape: 36864
 
@@ -38,6 +39,7 @@ class CNN(nn.Module):
             nn.Linear(4096, 4096), nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(4096, 2383), nn.ReLU(),
+            nn.Linear(2383, num_types)
         )
     def forward(self, X):
         with torch.no_grad():
@@ -60,8 +62,8 @@ def train_CNN(net: CNN, train_iter, num_epochs=20):
         lr_decay=True
     )
 
-def get_CNN_train_iter(batch_size=128):
-    imgs, labels = image_generation.load_images(img_dir='../data/synthetic_images/')
+def get_CNN_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH):
+    imgs, labels = image_generation.load_images(count=count, img_dir=syn_path)
     imgs, labels = image_generation.images_sampling(imgs, labels)
 
     data_loader = image_generation.get_train_dataloader(imgs, labels, batch_size)

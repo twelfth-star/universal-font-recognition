@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import image_generation
+from image_generation import SYN_IMAGE_PATH, REAL_IMAGE_PATH
 import train_model
 from train_model import init_weights
 
@@ -56,7 +57,7 @@ class SCAE(nn.Module):
 
         return X
 
-def get_SCAE_train_iter(count=np.Inf, batch_size=128, syn_dir='../data/synthetic_images/', real_dir='../data/real_images/'):
+def get_SCAE_train_iter(count=np.Inf, batch_size=128, syn_dir=SYN_IMAGE_PATH, real_dir=REAL_IMAGE_PATH):
     syn_imgs = image_generation.load_images(img_dir=syn_dir, need_label=False, count=count)
     real_imgs = image_generation.load_images(img_dir=real_dir, need_label=False, count=count)
 
