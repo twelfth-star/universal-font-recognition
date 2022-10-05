@@ -7,14 +7,14 @@ import torch
 import image_generation
 import train_model
 
-def init_seed():
-    random.seed(42)
-    np.random.seed(42)
-    torch.random.seed(42)
+def init_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
 
 
-def main():
-    init_seed()
+def temp():
+    init_seed(42)
     
     num_images = 12800
     num_samples_per_image = 3
@@ -41,7 +41,9 @@ def main():
 
     torch.save(net.state_dict(), "./font_recognition_model.torch")
 
-
+def main():
+    init_seed(42)
+    
 
 if __name__ == "__main__":
     main()

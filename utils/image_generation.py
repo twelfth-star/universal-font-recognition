@@ -93,8 +93,9 @@ def save_images(imgs, labels, output_dir='../data/synthetic_images/'):
         path = output_dir + str(labels[i]) + "_" + str(counts[labels[i]]) + '.jpg'
         img.save(path)
         counts[labels[i]] += 1
+    print(f"{len(imgs)} images saved.")
 
-def load_images(count=100000, img_dir='../data/synthetic_images/'):
+def load_images(count=np.Inf, img_dir='../data/synthetic_images/', need_label=True):
     print("Loading images...")
     print("Loading from: " + img_dir)
 
@@ -103,19 +104,22 @@ def load_images(count=100000, img_dir='../data/synthetic_images/'):
     img_list = os.listdir(img_dir)
     np.random.shuffle(img_list)
 
-    for i in tqdm(range(len(img_list))):
+    for i in tqdm(range(min(len(img_list), count))):
         if i >= count:
             break
         img_name = img_list[i]
         path = os.path.join(img_dir, img_name)
-        font_id = int(str(img_name).split('_')[0])
         img = Image.open(path)
-        imgs.append(img.copy())
+        imgs.append(img.copy().convert("L"))
         img.close()
-        labels.append(font_id)
-    print(f"Loaded images number: {len(imgs)}")
-    
-    return imgs, labels
+        if need_label:
+            font_id = int(str(img_name).split('_')[0])
+            labels.append(font_id)
+    print(f"{len(imgs)} images loaded")
+    if need_label:
+        return imgs, labels
+    else:
+        return imgs
 
 def image_sampling(pil_img: Image, sample_num = 3, width = 105, height = 105):
     # Randomly cut small samples from the image
@@ -133,21 +137,37 @@ def image_sampling(pil_img: Image, sample_num = 3, width = 105, height = 105):
     return samples
 
 def images_sampling(pil_imgs, labels, sample_num=3, width=105, height=105):
+    print("Sampling images...")
     sample_imgs, sample_labels = [], []
-    assert(len(pil_imgs) == len(labels))
-    for i in range(len(pil_imgs)):
+    if labels != None:
+        assert(len(pil_imgs) == len(labels))
+    for i in tqdm(range(len(pil_imgs))):
         sample_imgs += image_sampling(pil_imgs[i], sample_num=sample_num, width=width, height=height)
-        sample_labels += [labels[i]] * sample_num
-    return sample_imgs, sample_labels
+        if labels != None:
+            sample_labels += [labels[i]] * sample_num
+    if labels != None:
+        return sample_imgs, sample_labels
+    else:
+        return sample_imgs
 
 
 def get_train_dataloader(pil_imgs, labels, batch_size):
+    print("Converting images and labels to tensor...")
     imgs = torch.tensor(np.array([np.array(img) for img in pil_imgs])).float() # Convert img to tensor
     imgs = torch.unsqueeze(imgs, dim=1) # channel=1
-    labels = torch.nn.functional.one_hot(torch.tensor(labels)).float()
+    if labels != None:
+        labels = torch.nn.functional.one_hot(torch.tensor(labels)).float()
+    else:
+        labels = imgs
 
     print(f"images shape: {imgs.shape}")
     print(f"label shape: {labels.shape}")
+
+    imgs = imgs / 255
+    labels = labels / 255
+
+    print("Creating dataloader...")
+    print(f"Batch size: {batch_size}")
 
     dataset = TensorDataset(imgs, labels)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
