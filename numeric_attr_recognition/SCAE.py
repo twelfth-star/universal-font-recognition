@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from PIL import Image
 import torch
 from torch import nn
@@ -5,13 +7,10 @@ from torch.nn import functional as F
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
-import image_generation
-from image_generation import SYN_IMAGE_PATH, REAL_IMAGE_PATH
-import train_model
-from train_model import init_weights
-
-SCAE_MODEL_PATH = r"../data/models/scae_model.torch"
+from . import data_loader
+from ..general_code import train_model
 
 class Encoder(nn.Module):
     def __init__(self):
@@ -50,8 +49,8 @@ class SCAE(nn.Module):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
-        self.encoder.apply(init_weights)
-        self.decoder.apply(init_weights)
+        self.encoder.apply(train_model.init_weights)
+        self.decoder.apply(train_model.init_weights)
 
     def forward(self, X):
         X = self.encoder(X)
@@ -59,24 +58,26 @@ class SCAE(nn.Module):
 
         return X
 
-def get_SCAE_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH, real_path=REAL_IMAGE_PATH, num_samples_per_image=3):
-    syn_imgs = image_generation.load_images(img_path=syn_path, need_label=False, count=count)
-    real_imgs = image_generation.load_images(img_path=real_path, need_label=False, count=count)
+def get_SCAE_train_dataset_dataloader(batch_size:int,
+                                      total_num:int,
+                                      sample_num:int,
+                                      generated_img_path: str,
+                                      generated_label_path: str,
+                                      real_img_path: str):
+    return data_loader.get_train_dataset_dataloader(generated_img_path,
+                                                         generated_label_path,
+                                                         real_img_path,
+                                                         total_num,
+                                                         sample_num,
+                                                         batch_size,
+                                                         True)
 
-    imgs = syn_imgs + real_imgs
-    imgs = image_generation.images_sampling(imgs, None, sample_num=num_samples_per_image)
-
-    for i in range(len(imgs)):
-        imgs[i] = imgs[i]
-    
-    data_loader = image_generation.get_train_dataloader(imgs, None, batch_size)
-
-    return data_loader
-
-def train_SCAE(net: SCAE, train_iter, num_epochs=20):
+def train_SCAE(net: SCAE,
+               train_iter: Iterable,
+               num_epochs:int=20):
     train_model.train(
-        net, 
-        train_iter,
+        net=net, 
+        train_iter=train_iter,
         num_epochs = num_epochs, 
         lr = 0.0003,
         loss = nn.MSELoss(),
@@ -85,9 +86,5 @@ def train_SCAE(net: SCAE, train_iter, num_epochs=20):
         calc_accuracy=False, 
         task_name="SCAE"
     )
-
-
-def get_SCAE_model():
-    return torch.load(SCAE_MODEL_PATH)
 
 

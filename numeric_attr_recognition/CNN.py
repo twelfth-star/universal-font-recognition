@@ -1,3 +1,5 @@
+from typing import Iterable
+
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -5,15 +7,16 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 
-import SCAE
-import train_model
-import image_generation
-from image_generation import SYN_IMAGE_PATH
-
-CNN_MODEL_PATH = r"../data/models/cnn_model.torch"
+from . import SCAE
+from . import data_loader
+from ..general_code import train_model
 
 class CNN(nn.Module):
-    def __init__(self, encoder: SCAE.Encoder, num_types: int):
+    def __init__(
+        self,
+        encoder: SCAE.Encoder,
+        num_types: int
+    ):
         super().__init__()
         self.Cu = nn.Sequential(
             encoder.conv1, nn.ReLU(),       # output shape: 64 * 48 * 48
@@ -43,6 +46,9 @@ class CNN(nn.Module):
             nn.Linear(4096, 2383), nn.ReLU(),
             nn.Linear(2383, num_types)
         )
+        self.Cs.apply(train_model.init_weights)
+        
+        
     def forward(self, X):
         with torch.no_grad():
             X = self.Cu(X)
@@ -50,7 +56,12 @@ class CNN(nn.Module):
 
         return X
 
-def train_CNN(net: CNN, train_iter, num_epochs=20):
+def train_CNN(
+    net: CNN,
+    train_iter: Iterable,
+    type: str,
+    num_epochs: int=20
+    ):
     train_model.train(
         net, 
         train_iter, 
@@ -64,14 +75,20 @@ def train_CNN(net: CNN, train_iter, num_epochs=20):
         lr_decay=True
     )
 
-def get_CNN_model():
-    return torch.load(CNN_MODEL_PATH)
 
-def get_CNN_train_iter(count=np.Inf, batch_size=128, syn_path=SYN_IMAGE_PATH, num_samples_per_image=3):
-    imgs, labels = image_generation.load_images(count=count, img_path=syn_path)
-    imgs, labels = image_generation.images_sampling(imgs, labels, sample_num=num_samples_per_image)
-
-    data_loader = image_generation.get_train_dataloader(imgs, labels, batch_size)
-
-    return data_loader
-
+def get_CNN_train_dataset_dataloader(
+    batch_size:int,
+    total_num:int,
+    sample_num:int,
+    generated_img_path: str,
+    generated_label_path: str
+    ):
+    return data_loader.get_train_dataset_dataloader(
+        generated_img_path,
+        generated_label_path,
+        None,
+        total_num,
+        sample_num,
+        batch_size,
+        True
+    )

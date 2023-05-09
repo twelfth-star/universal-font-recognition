@@ -1,0 +1,1 @@
+Please put the the files of the fonts (`.ttf`, `.otf`, `.ttc`, etc.) you want to recognize here.
