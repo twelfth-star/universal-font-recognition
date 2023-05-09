@@ -10,7 +10,7 @@ from . import CNN
 def main():
     utils.init_seed(42)
     
-    fonts_path = r'..dataset\fonts\JP'
+    fonts_path = r'..dataset\fonts'
     generated_image_path = r'..dataset\generated_images'
     generated_label_path = r'..dataset\generated_images\labels.csv'
     real_image_path = r'..dataset\real_images'
